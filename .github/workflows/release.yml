@@ -80,6 +80,8 @@ jobs:
       - name: Check dashboard JavaScript
         run: node --check custom_components/ok_el/frontend/ok-el-history-card.js
 
+      - name: Test refresh button visual feedback
+        run: node tests/test_dashboard_feedback.js
       - name: Publish stable release only after all checks pass
         env:
           GH_TOKEN: ${{ github.token }}
