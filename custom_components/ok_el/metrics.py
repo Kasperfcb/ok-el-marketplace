@@ -31,7 +31,7 @@ DANISH_WEEKDAYS = (
 
 def day_label(day: date) -> str:
     """Provide an explicit Danish weekday and date, independent of OS locale."""
-    return f"{DANISH_WEEKDAYS[day.weekday()]} {day:%d/%m-%y}"
+    return f"{DANISH_WEEKDAYS[day.weekday()]} d. {day:%d/%m-%y}"
 
 
 def known_total(rows: list[dict[str, Any]], field: str) -> float | None:
