@@ -38,6 +38,8 @@ jobs:
           PY
       - name: Run offline sensor tests
         run: python3 -m unittest discover -s tests -v
+      - name: Validate bundled history dashboard JavaScript
+        run: node --check custom_components/ok_el/frontend/ok-el-history-card.js
       - name: Publish release for manifest version
         env:
           GH_TOKEN: ${{ github.token }}
