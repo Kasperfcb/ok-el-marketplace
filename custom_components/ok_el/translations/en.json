@@ -1,0 +1,32 @@
+{
+  "title": "OK Electricity (unofficial)",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to Min OK",
+        "description": "Enter your own OK account credentials. The agreement number is discovered automatically. The password is stored in Home Assistant's local configuration.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to Min OK again",
+        "description": "OK rejected the saved credentials. Enter your current password.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "OK rejected the email or password.",
+      "cannot_connect": "Could not contact OK or fetch electricity data.",
+      "agreement_not_found": "Could not discover exactly one electricity agreement on Min OK.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This OK account is already configured.",
+      "reauth_successful": "Credentials updated."
+    }
+  }
+}

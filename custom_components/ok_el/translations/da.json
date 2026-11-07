@@ -1,0 +1,32 @@
+{
+  "title": "OK El (uofficiel)",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Log ind på Min OK",
+        "description": "Indtast login til din egen OK-konto. Aftalenummer findes automatisk. Adgangskoden gemmes i Home Assistants lokale konfiguration.",
+        "data": {
+          "email": "E-mail",
+          "password": "Adgangskode"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Log ind på Min OK igen",
+        "description": "OK har afvist de gemte loginoplysninger. Indtast din aktuelle adgangskode.",
+        "data": {
+          "password": "Adgangskode"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "E-mail eller adgangskode blev afvist af OK.",
+      "cannot_connect": "Kunne ikke kontakte OK eller hente elforbruget.",
+      "agreement_not_found": "Kunne ikke finde præcis én elaftale på Min OK.",
+      "unknown": "Der opstod en uventet fejl."
+    },
+    "abort": {
+      "already_configured": "Denne OK-konto er allerede tilføjet.",
+      "reauth_successful": "Adgangskoden er opdateret."
+    }
+  }
+}

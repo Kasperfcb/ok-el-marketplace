@@ -1,0 +1,15 @@
+{
+  "domain": "ok_el",
+  "name": "OK El (uofficiel)",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/Kasperfcb/ok-el-marketplace#readme",
+  "issue_tracker": "https://github.com/Kasperfcb/ok-el-marketplace/issues",
+  "codeowners": [
+    "@Kasperfcb"
+  ],
+  "dependencies": [],
+  "requirements": [],
+  "iot_class": "cloud_polling",
+  "integration_type": "service"
+}
