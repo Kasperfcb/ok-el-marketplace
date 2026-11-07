@@ -59,6 +59,12 @@ SENSORS = (
     _unitprice("latest_hour_price", "Seneste aflæste time – pris pr. kWh"),
     _energy("current_month_kwh", "Forbrug denne måned"),
     _money("current_month_cost", "Pris denne måned"),
+    SensorEntityDescription(
+        key="current_month_measured_days",
+        name="Aflæste dage denne måned",
+        native_unit_of_measurement="dage",
+        suggested_display_precision=0,
+    ),
     _energy("previous_month_kwh", "Forbrug sidste måned"),
     _money("previous_month_cost", "Pris sidste måned"),
     _energy("current_quarter_kwh", "Forbrug dette kvartal"),
