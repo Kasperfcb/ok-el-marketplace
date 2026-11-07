@@ -33,8 +33,8 @@ jobs:
 
       - name: Require explicit approval and main branch
         env:
-          REQUESTED_VERSION: \${{ inputs.version }}
-          CONFIRMATION: \${{ inputs.confirmation }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$CONFIRMATION" != "PUBLISH" ]; then
             echo "::error::Manual releases require confirmation PUBLISH"; exit 1
@@ -82,16 +82,16 @@ jobs:
 
       - name: Publish stable release only after all checks pass
         env:
-          GH_TOKEN: \${{ github.token }}
-          REQUESTED_VERSION: \${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$REQUESTED_VERSION" > /dev/null 2>&1; then
-            echo "::error::Release $REQUESTED_VERSION already exists; stable releases are immutable."
+          version="$(python3 -c 'import json;print(json.load(open("custom_components/ok_el/manifest.json"))["version"])')"
+          if gh release view "$version" > /dev/null 2>&1; then
+            echo "::error::Release $version already exists; stable releases are immutable."
             exit 1
           fi
-          gh release create "$REQUESTED_VERSION" \
+          gh release create "$version" \
             --target "$GITHUB_SHA" \
-            --title "OK El $REQUESTED_VERSION" \
+            --title "OK El $version" \
             --notes-file RELEASE_NOTES.md \
             --latest
-          echo "Stable release $REQUESTED_VERSION published."
+          echo "Stable release $version published."
