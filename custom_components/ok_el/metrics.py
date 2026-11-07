@@ -97,6 +97,17 @@ def build_snapshot(
         _make_period(values, attrs, prefix, records,
                      f"{target[0]}-{target[1]:02d}")
 
+    # Count distinct, actually measured dates; a missing meter day is not a zero-kWh day.
+    current_month_days = {
+        row_day(row) for row in measured_days
+        if row_day(row).year == today.year and row_day(row).month == today.month
+    }
+    values["current_month_measured_days"] = len(current_month_days)
+    attrs["current_month_measured_days"] = {
+        "period": f"{today.year}-{today.month:02d}",
+        "description": "Antal dage med en faktisk kWh-aflæsning fra OK",
+    }
+
     current_quarter = (today.month - 1) // 3
     quarter_rows = [r for r in quarterly if row_day(r) is not None
                     and row_day(r).year == today.year
