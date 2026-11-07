@@ -36,6 +36,8 @@ jobs:
           assert not (root/"data").exists()
           print("Release validated:",version)
           PY
+      - name: Run offline sensor tests
+        run: python3 -m unittest discover -s tests -v
       - name: Publish release for manifest version
         env:
           GH_TOKEN: ${{ github.token }}
