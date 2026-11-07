@@ -123,6 +123,21 @@ class OKElSensor(CoordinatorEntity[OKElCoordinator], SensorEntity):
         )
 
     @property
+    def name(self) -> str | None:
+        """Show the correct Danish weekday/date, while keeping stable entity IDs.
+
+        day_1/day_2 etc. remain the same registry entities as dates advance.
+        """
+        key = self.entity_description.key
+        if key.startswith("day_") and (key.endswith("_kwh") or key.endswith("_cost")):
+            details = self.coordinator.data.attributes.get(key, {})
+            label = details.get("date_label")
+            if isinstance(label, str):
+                kind = "Forbrug" if key.endswith("_kwh") else "Pris"
+                return f"{kind} – {label}"
+        return self.entity_description.name
+
+    @property
     def native_value(self) -> float | None:
         """Return the measured value or None; never manufacture a zero."""
         return self.coordinator.data.values.get(self.entity_description.key)
