@@ -1,7 +1,8 @@
-## Første Marketplace-testversion
+## Nyt i 0.1.1
 
-- Automatisk login og opslag af aftalenummer på Min OK.
-- 17 sensorer for elforbrug og priser.
-- Opdatering af data hver 6. time.
-- Ingen ændring af aftaler eller betalinger.
-- Uofficiel integration; kræver Home Assistant 2026.11 eller nyere.
+- **Ny sensor:** Aflæste dage denne måned. Viser antal unikke dage, hvor OK faktisk har rapporteret kWh-forbrug.
+- Alle 17 eksisterende sensor-ID'er og loginopsætningen bevares.
+- Ingen nye adgangsoplysninger, integrationstilladelser eller ekstra API-kald.
+- **Efter installation:** Genstart Home Assistant, og find sensoren under enheden *Min OK El*.
+
+Bemærk: OK-data kan være 1–2 dage forsinkede. Dette er en uofficiel community-integration.
