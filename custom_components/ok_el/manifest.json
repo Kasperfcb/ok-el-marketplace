@@ -1,6 +1,10 @@
 {
   "domain": "ok_el",
   "name": "OK El (uofficiel)",
+  "categories": [
+    "energy.energy_prices",
+    "energy.meters_monitoring"
+  ],
   "codeowners": [
     "@Kasperfcb"
   ],
