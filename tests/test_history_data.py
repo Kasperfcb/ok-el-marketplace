@@ -53,6 +53,48 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(result["HOUR"], [])
         self.assertEqual(mod.history_summary(result)["DAY"], 3)
 
+    def test_incremental_month_plan_skips_cached_and_checked(self):
+        from datetime import date
+        months = [(2026, 11), (2026, 10), (2026, 9), (2026, 8),
+                  (2026, 7), (2026, 6)]
+        saved = [
+            {"dato": "2026-09-01T00:00:00", "kwh": 2.0},
+            {"dato": "2026-08-01T00:00:00", "kwh": 0.0},
+        ]
+        requested = mod.missing_archive_months(
+            months, date(2026, 11, 8), saved, ["2026-07", "2026-06"]
+        )
+        self.assertEqual(requested, [(2026, 11), (2026, 10)])
+
+    def test_incremental_month_plan_retries_failed_scopes(self):
+        from datetime import date
+        months = [(2026, 6), (2026, 5)]
+        wanted = mod.missing_archive_months(
+            months, date(2026, 11, 8), [], ["2026-05"]
+        )
+        self.assertEqual(wanted, [(2026, 6)])
+
+    def test_incremental_hour_plan_skips_complete_days(self):
+        daily = [
+            {"dato": "2026-11-07T00:00:00", "aflaest": False, "kwh": None},
+            {"dato": "2026-11-06T00:00:00", "aflaest": True, "kwh": 4.2},
+            {"dato": "2026-11-05T00:00:00", "aflaest": True, "kwh": 3.1},
+            {"dato": "2026-11-04T00:00:00", "aflaest": True, "kwh": 3.0},
+        ]
+        existing = [
+            {"dato": f"2026-11-06T{h:02d}:00:00",
+             "kwh": 0.2, "aflaest": True}
+            for h in range(24)
+        ] + [
+            {"dato": f"2026-11-05T{h:02d}:00:00",
+             "kwh": 0.3, "aflaest": True}
+            for h in range(10)
+        ]
+        self.assertEqual(
+            mod.missing_hour_dates(daily, existing, 3),
+            ["2026-11-05", "2026-11-04"],
+        )
+
     def test_reject_invalid_timestamp_and_limit_size(self):
         self.assertEqual(mod.merge_rows([], [{"dato": "not-a-date", "kwh": 4}], "DAY"), [])
         with self.assertRaises(ValueError):
