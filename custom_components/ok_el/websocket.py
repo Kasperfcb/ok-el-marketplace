@@ -27,6 +27,7 @@ def _manager(hass: HomeAssistant, entry_id: str | None) -> HistoryManager | None
         vol.Required("type"): "ok_el/history",
         vol.Optional("entry_id"): str,
         vol.Optional("period", default="DAY"): vol.In(["HOUR", "DAY", "MONTH", "QUARTER", "YEAR"]),
+        vol.Optional("offset", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=32000)),
     }
 )
 @callback
@@ -40,7 +41,7 @@ def ws_history(
     if manager is None:
         connection.send_error(msg["id"], "not_found", "No unique OK El account found")
         return
-    connection.send_result(msg["id"], manager.view(msg["period"]))
+    connection.send_result(msg["id"], manager.view(msg["period"], msg["offset"]))
 
 
 @websocket_api.require_admin
