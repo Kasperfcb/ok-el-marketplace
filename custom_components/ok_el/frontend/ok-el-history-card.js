@@ -196,12 +196,16 @@ class OKElHistoryCard extends HTMLElement {
     this.shadowRoot.getElementById("older").addEventListener("click",()=>{
       if(this._hourPage.has_older){
         this._hourOffset+=this._hourPage.page_size||720;
+        this._limit="all";
+        this.shadowRoot.getElementById("limit").value="all";
         this._fetch();
       }
     });
     this.shadowRoot.getElementById("newer").addEventListener("click",()=>{
       if(this._hourPage.has_newer){
         this._hourOffset=Math.max(0,this._hourOffset-(this._hourPage.page_size||720));
+        this._limit="all";
+        this.shadowRoot.getElementById("limit").value="all";
         this._fetch();
       }
     });
