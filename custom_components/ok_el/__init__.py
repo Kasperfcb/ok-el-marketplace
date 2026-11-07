@@ -28,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.runtime_data = coordinator
     hass.data.setdefault(DOMAIN, {"entries": {}})["entries"][entry.entry_id] = manager
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Resume only an import the account owner previously requested.
+    manager.resume_pending()
     return True
 
 
