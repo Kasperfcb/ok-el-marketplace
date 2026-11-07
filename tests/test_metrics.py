@@ -95,7 +95,7 @@ class MeasuredDaysTests(unittest.TestCase):
             result.attributes["day_2_cost"]["weekday"], "Torsdag"
         )
         self.assertEqual(
-            result.attributes["last_7_days_kwh"]["daily_history"][-3]["date_label"],
+            result.attributes["last_7_days_kwh"]["daily_history"][-2]["date_label"],
             "Torsdag 05/11-26",
         )
 
