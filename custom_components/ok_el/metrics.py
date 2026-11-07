@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 
@@ -107,6 +107,55 @@ def build_snapshot(
         "period": f"{today.year}-{today.month:02d}",
         "description": "Antal dage med en faktisk kWh-aflæsning fra OK",
     }
+
+
+    # Previous seven completed Danish calendar days, not just the most recent
+    # available reading. Missing days remain unknown, including missing prices.
+    # Deduplicate by calendar date to avoid counting repeated API records.
+    days_by_date: dict[date, dict[str, Any]] = {}
+    for row in daily:
+        measured_date = row_day(row)
+        if (measured_date is None or measured_date >= today
+                or row.get("aflaest") is not True):
+            continue
+        if row.get("kwh") is None and row.get("dkk_inkl_moms") is None:
+            continue
+        previous = days_by_date.setdefault(measured_date, {})
+        for field in ("kwh", "dkk_inkl_moms"):
+            if row.get(field) is not None:
+                previous[field] = row[field]
+
+    recent_rows: list[dict[str, Any]] = []
+    for offset in range(1, 8):
+        calendar_day = today - timedelta(days=offset)
+        period = days_by_date.get(calendar_day, {})
+        kwh = period.get("kwh")
+        cost = period.get("dkk_inkl_moms")
+        values[f"day_{offset}_kwh"] = kwh
+        values[f"day_{offset}_cost"] = cost
+        day_attributes = {"date": calendar_day.isoformat(), "days_ago": offset,
+                          "measured": kwh is not None}
+        attrs[f"day_{offset}_kwh"] = day_attributes
+        attrs[f"day_{offset}_cost"] = day_attributes
+        recent_rows.append({
+            "date": calendar_day.isoformat(), "kwh": kwh,
+            "cost_dkk": cost,
+        })
+
+    # A partial seven-day sum is explicitly labelled as partial via attributes.
+    # Do not infer missing daily values as zero consumption.
+    values["last_7_days_kwh"] = known_total(recent_rows, "kwh")
+    values["last_7_days_cost"] = known_total(recent_rows, "cost_dkk")
+    summary_attributes = {
+        "from": (today - timedelta(days=7)).isoformat(),
+        "to": (today - timedelta(days=1)).isoformat(),
+        "measured_days": sum(item["kwh"] is not None for item in recent_rows),
+        "priced_days": sum(item["cost_dkk"] is not None for item in recent_rows),
+        "expected_days": 7,
+        "daily_history": list(reversed(recent_rows)),
+    }
+    attrs["last_7_days_kwh"] = summary_attributes
+    attrs["last_7_days_cost"] = summary_attributes
 
     current_quarter = (today.month - 1) // 3
     quarter_rows = [r for r in quarterly if row_day(r) is not None
