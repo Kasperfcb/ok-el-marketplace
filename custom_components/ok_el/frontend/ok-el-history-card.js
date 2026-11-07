@@ -15,6 +15,7 @@ class OKElHistoryCard extends HTMLElement {
     this._coverage={};
     this._busy=false;
     this._loading=false;
+    this._refreshTimer=null;
     this._lastFetch=0;
     this._error="";
     this._timer=null;
@@ -43,6 +44,8 @@ class OKElHistoryCard extends HTMLElement {
   disconnectedCallback() {
     if(this._timer) clearInterval(this._timer);
     this._timer=null;
+    if(this._refreshTimer)clearTimeout(this._refreshTimer);
+    this._refreshTimer=null;
   }
 
   _init() {
@@ -59,6 +62,13 @@ class OKElHistoryCard extends HTMLElement {
         button:focus-visible,select:focus-visible{outline:2px solid var(--primary-color,#57bfb2);outline-offset:2px}
         button[disabled]{opacity:.5;cursor:wait}
         button.active{background:var(--primary-color,#398b81);color:var(--text-primary-color,#fff);border-color:var(--primary-color,#398b81)}
+        #reload{transition:background-color .18s ease,border-color .18s ease,color .18s ease}
+        #reload.refreshing,#reload.refreshed{background:var(--primary-color,#008dcd);color:#fff;
+          border-color:var(--primary-color,#008dcd);opacity:1;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color,#008dcd) 25%,transparent)}
+        #reload.refreshing{cursor:progress}
+        #reload.refreshed{background:#197eac}
+        #reload.failed{background:var(--error-color,#bd4242);color:#fff;border-color:var(--error-color,#bd4242);opacity:1}
+
         .tabs,.controls,.archive-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
         .tabs{margin-bottom:16px}
         .tabs button{flex:1;min-width:68px}
@@ -140,12 +150,21 @@ class OKElHistoryCard extends HTMLElement {
           <p class="muted">Historikken gemmes privat i Home Assistant og hentes kun efter dit valg.</p>
           <div class="archive-controls">
             <label>Dagsdata <select id="months"><option value="6">6 måneder</option><option value="12" selected>12 måneder</option><option value="24">24 måneder</option><option value="36">36 måneder</option></select></label>
-            <label>Timedata <select id="hours"><option value="0">Ingen</option><option value="7" selected>7 dage</option><option value="14">14 dage</option><option value="30">30 dage</option></select></label>
+            <label>Timedata <select id="hours">
+              <option value="0">Ingen</option>
+              <option value="7" selected>7 dage</option>
+              <option value="14">14 dage</option>
+              <option value="30">30 dage</option>
+              <option value="90">90 dage</option>
+              <option value="180">180 dage</option>
+              <option value="365">365 dage</option>
+              <option value="all">Alle aflæste dage</option>
+            </select></label>
             <button id="import">Hent historik</button>
           </div>
           <div id="status" class="status">Forbereder historik…</div>
         </div>
-        <div class="notice">Aflæsninger kan være forsinkede. Manglende værdier vises som — og tælles ikke som 0 kWh. Registrerede beløb kan afvige fra den endelige faktura. Timehistorik hentes kun for faktisk aflæste dage.</div>
+        <div class="notice">Aflæsninger kan være forsinkede. Manglende værdier vises som — og tælles ikke som 0 kWh. Registrerede beløb kan afvige fra den endelige faktura. Timehistorik hentes kun for faktisk aflæste dage. Vælger du Alle, gælder det højst de valgte 36 måneders dagsdata. Store importer gemmes løbende og genoptages efter genstart.</div>
       </ha-card>`;
     this.shadowRoot.querySelectorAll("[data-period]").forEach(button=>
       button.addEventListener("click",()=>{
@@ -162,12 +181,39 @@ class OKElHistoryCard extends HTMLElement {
       this._limit=event.target.value;this._render();
     });
     this.shadowRoot.getElementById("chart").addEventListener("pointerleave",()=>this._hideTooltip());
-    this.shadowRoot.getElementById("reload").addEventListener("click",()=>this._fetch());
+    this.shadowRoot.getElementById("reload").addEventListener("click",()=>this._fetch(true));
     this.shadowRoot.getElementById("import").addEventListener("click",()=>this._import());
   }
-  async _fetch() {
+  _refreshVisual(status) {
+    const button=this.shadowRoot.getElementById("reload");
+    if(!button)return;
+    button.classList.remove("refreshing","refreshed","failed");
+    if(status==="working"){
+      button.classList.add("refreshing");
+      button.textContent="↻ Opdaterer…";
+      button.disabled=true;
+    }else if(status==="ok"){
+      button.classList.add("refreshed");
+      button.textContent="✓ Opdateret";
+      button.disabled=true;
+    }else if(status==="error"){
+      button.classList.add("failed");
+      button.textContent="! Kunne ikke opdatere";
+      button.disabled=true;
+    }else{
+      button.textContent="↻ Opdater visning";
+      button.disabled=false;
+    }
+  }
+  async _fetch(manual=false) {
     if(!this._hass || this._loading || !this.isConnected)return;
     this._loading=true;
+    const started=Date.now();
+    if(manual){
+      if(this._refreshTimer)clearTimeout(this._refreshTimer);
+      this._refreshVisual("working");
+    }
+    let success=false;
     try{
       const q={type:"ok_el/history",period:this._period};
       if(this._config.entry_id)q.entry_id=this._config.entry_id;
@@ -180,15 +226,30 @@ class OKElHistoryCard extends HTMLElement {
       this._lastCompleted=result.last_completed||"";
       this._lastFetch=Date.now();
       this._render();
+      success=true;
     }catch(error){
       this._error="Kunne ikke hente historik. Kontrollér integrationen og dine brugerrettigheder.";
       this._renderStatus();
-    }finally{this._loading=false;}
+    }finally{
+      this._loading=false;
+      if(manual){
+        const wait=Math.max(0,650-(Date.now()-started));
+        this._refreshTimer=setTimeout(()=>{
+          if(!this.isConnected)return;
+          this._refreshVisual(success?"ok":"error");
+          this._refreshTimer=setTimeout(()=>{
+            if(this.isConnected)this._refreshVisual("idle");
+            this._refreshTimer=null;
+          },1500);
+        },wait);
+      }
+    }
   }
   async _import() {
     if(!this._hass||this._busy)return;
     const months=Number(this.shadowRoot.getElementById("months").value);
-    const hour_days=Number(this.shadowRoot.getElementById("hours").value);
+    const chosen=this.shadowRoot.getElementById("hours").value;
+    const hour_days=chosen==="all"?"all":Number(chosen);
     const q={type:"ok_el/backfill",months,hour_days};
     if(this._config.entry_id)q.entry_id=this._config.entry_id;
     try {
