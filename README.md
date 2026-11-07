@@ -2,7 +2,7 @@
 
 Få overblik over dit elforbrug og dine elpriser fra **Min OK** direkte i Home Assistant. Integrationen finder automatisk din elaftale og opretter sensorer til både forbrug og omkostninger.
 
-**Version 0.2.0 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
+**Version 0.2.1 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
 
 > **Uofficiel integration:** Projektet er udviklet uafhængigt af OK og er ikke tilknyttet eller understøttet af OK.
 
@@ -76,7 +76,9 @@ type: custom:ok-el-history-card
 4. Gem kortet. Det viser straks de historiske målinger, integrationen allerede har hentet.
 5. Tryk på **Hent historik** i kortet for at indlæse ældre data. Du kan vælge 6, 12, 24 eller 36 måneders dagsdata samt timeforbrug for 0, 7, 14 eller 30 aflæste dage. En import kan tage tid, og data bliver hentet i baggrunden.
 
-**Hvis korttypen ikke vises:** Gå til **Indstillinger → Dashboards → Ressourcer**, tilføj `/ok-el-assets/ok-el-history-card.js` som **JavaScript-modul**, og genindlæs din browser. Ressourcer registreres normalt automatisk i Home Assistants standard-dashboardtilstand.
+**Hvis korttypen ikke vises:** Opdatér til **0.2.1**, genstart Home Assistant, og genindlæs browseren med **Cmd+Shift+R / Ctrl+Shift+R**. Denne version retter automatisk registrering af kortet i Home Assistants Lovelace-ressourcer.
+
+Hvis din installation bruger YAML-styrede dashboardressourcer, eller hvis automatisk registrering stadig ikke virker, kan du tilføje `/ok-el-assets/ok-el-history-card.js?v=0.2.1` under **Indstillinger → Dashboards → ⋮ → Ressourcer** som **JavaScript-modul**. Opret kun ressourcen manuelt, hvis den ikke allerede findes.
 
 **Privat og vedvarende:** Historiske data gemmes i Home Assistants lokale, private `.storage`-lager, ikke som tusindvis af sensorattributter. De forbliver tilgængelige efter genstart og bliver opdateret, når integrationen henter nye aflæsninger. Kun Home Assistant-administratorer kan tilgå den fulde historik via kortets godkendte API.
 
@@ -98,6 +100,11 @@ Priserne er baseret på oplysningerne fra Min OK og kan afvige fra de endelige b
 - Integrationen kommunikerer med OK via HTTPS og kræver ingen åbne indgående porte.
 
 ## Seneste ændringer
+
+**0.2.1 – Automatisk indlæsning af historikkort**
+
+Retter en fejl i registreringen af dashboardkortet på Home Assistant 2026.11+. Kortet tilføjes nu automatisk som en Lovelace-ressource i standardopsætningen. Eksisterende sensorer og loginopsætningen påvirkes ikke. Genstart Home Assistant og genindlæs dashboardet efter opdatering.
+
 
 **0.2.0 – Historik-dashboard og datofølge**
 
