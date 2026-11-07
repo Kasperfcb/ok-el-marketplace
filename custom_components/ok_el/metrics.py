@@ -1,7 +1,7 @@
 """Pure calculations for Min OK sensor values; no Home Assistant dependency."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
 
@@ -10,6 +10,7 @@ from typing import Any
 class Snapshot:
     values: dict[str, float | None]
     attributes: dict[str, dict[str, Any]]
+    history: dict[str, list[dict]] = field(default_factory=dict)
 
 
 def row_day(row: dict[str, Any]) -> date | None:
@@ -194,4 +195,11 @@ def build_snapshot(
     _make_period(values, attrs, "previous_year", previous_year_rows,
                  str(today.year - 1))
 
-    return Snapshot(values=values, attributes=attrs)
+    history = {
+        "HOUR": hourly,
+        "DAY": daily,
+        "MONTH": monthly,
+        "QUARTER": quarterly,
+        "YEAR": annual,
+    }
+    return Snapshot(values=values, attributes=attrs, history=history)
