@@ -95,6 +95,48 @@ class HistoryTests(unittest.TestCase):
             ["2026-11-05", "2026-11-04"],
         )
 
+    def test_select_90_180_365_and_all_measured_hour_dates(self):
+        from datetime import date, timedelta
+        start = date(2026, 11, 8)
+        saved = [
+            {"dato": (start - timedelta(days=n)).isoformat(),
+             "aflaest": True, "kwh": 0.0}
+            for n in range(1, 401)
+        ]
+        self.assertEqual(len(mod.select_hour_dates(saved, [], 90)), 90)
+        self.assertEqual(len(mod.select_hour_dates(saved, [], 180)), 180)
+        self.assertEqual(len(mod.select_hour_dates(saved, [], 365)), 365)
+        self.assertEqual(len(mod.select_hour_dates(saved, [], "all")), 400)
+        self.assertEqual(
+            len(mod.select_hour_dates(saved, [], "all", earliest_month="2026-01")),
+            len([r for r in saved if r["dato"] >= "2026-01-01"]),
+        )
+
+    def test_select_all_skips_checked_days_and_full_hour_cache(self):
+        daily = [
+            {"dato": "2026-11-05", "aflaest": True, "kwh": 4},
+            {"dato": "2026-11-04", "aflaest": True, "kwh": 3},
+            {"dato": "2026-11-03", "aflaest": True, "kwh": 2},
+        ]
+        saved = [
+            {"dato": f"2026-11-05T{hour:02d}:00:00",
+             "aflaest": True, "kwh": 0}
+            for hour in range(24)
+        ]
+        result = mod.select_hour_dates(
+            daily, saved, "all", checked_dates=["2026-11-04"]
+        )
+        self.assertEqual(result, ["2026-11-03"])
+
+    def test_only_explicit_hour_selections_are_valid(self):
+        for value in (0, 7, 14, 30, 90, 180, 365, "all"):
+            self.assertTrue(mod.valid_hour_selection(value))
+        for value in (-1, 32, 1000, 1.0, True, "365", None):
+            self.assertFalse(mod.valid_hour_selection(value))
+
+    def test_hour_limit_covers_three_years_without_losing_old_records(self):
+        self.assertGreaterEqual(mod.LIMITS["HOUR"], 36 * 31 * 24)
+
     def test_reject_invalid_timestamp_and_limit_size(self):
         self.assertEqual(mod.merge_rows([], [{"dato": "not-a-date", "kwh": 4}], "DAY"), [])
         with self.assertRaises(ValueError):
