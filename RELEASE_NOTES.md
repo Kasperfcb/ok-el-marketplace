@@ -1,12 +1,19 @@
-## Nyheder i 0.2.2 – Overskuelig graf og hurtigere historik
+## Nyt i OK El 0.2.3
 
-- Hold musen over en graf-søjle for at se **ugedag/dato, kWh, pris inkl. moms og pris pr. kWh** i samme tooltip. Du kan også trykke på søjlen på telefon og bruge tastaturet.
-- Historikimporten viser nu fremdrift: antal behandlede trin og den periode, der arbejdes med.
-- Tidligere indlæste **ældre måneder og fuldførte time-døgn** genbruges automatisk ved næste import i stedet for at blive hentet igen.
-- De to seneste måneder genindlæses fortsat, så efterregistrerede målinger hos OK og prisrettelser kan fanges.
-- Historiske måneder, der er undersøgt, men hvor OK ikke har aflæsninger, bliver registreret lokalt, så gentagne importer normalt kan springe dem over.
-- Forbruget gemmes stadig privat i Home Assistant, og de eksisterende **34 sensorer** samt deres ID'er bevares.
+### Flere timedata fra Min OK
 
-**Efter opdatering:** Installér via Marketplace, genstart Home Assistant og genindlæs dashboardet med Ctrl+Shift+R / Cmd+Shift+R. Prøv derefter at holde musen over en søjle og hente historik igen.
+- **Timedata** har nu valgene **7, 14, 30, 90, 180, 365 dage** og **Alle aflæste dage**. Du kan kombinere med 6–36 måneders dagsdata.
+- **Alle** betyder alle aflæste dage inden for de valgte måneder og de tidsdata, som OK faktisk kan levere. Det er ikke en garanti for, at OK har hele perioden.
+- Importen køres forsigtigt i portioner på højst **21 timedage**, hvor aflæsninger og fremdrift gemmes i Home Assistants private lager efter hver portion.
+- Hvis Home Assistant genstarter midt i et tidligere bestilt importjob, fortsætter importen automatisk ud fra den gemte historik.
+- Timehistorikken kan gennemses i vinduer på cirka 30 dage med **Ældre timer / Nyere timer**. Historiske målinger forsvinder ikke, når du skifter vindue.
 
-**Bemærk:** Den faktiske hastighed afhænger af OK's server. Integrationen laver fortsat API-kald sekventielt for at undgå at overbelaste OK. Frontend og den optimerede historikimport er testet med automatiske kode- og enhedstests, men endnu ikke på brugerens live Home Assistant.
+### Mere tydelig opdateringsknap
+
+- **Opdater visning** bliver straks blå og viser **↻ Opdaterer…**, så du kan se, at trykket er registreret.
+- Når lokal datahentning er afsluttet, vises **✓ Opdateret**. Fejl vises tydeligt.
+- Knappen genindlæser historikken fra Home Assistant; den laver ikke et separat login hos OK. Til nye historiske målinger bruges **Hent historik**.
+
+Alle 34 eksisterende sensorer og loginindstillinger bevares. Kompatibilitet og brugerflade er testet automatisk; langvarig import af alle tilgængelige timedage skal valideres i en kørende Home Assistant.
+
+**Efter opdatering:** Genstart Home Assistant og genindlæs dashboardet med Ctrl+Shift+R (Windows) eller Cmd+Shift+R (Mac).
