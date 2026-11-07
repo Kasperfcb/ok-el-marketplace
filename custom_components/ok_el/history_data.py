@@ -8,7 +8,10 @@ PERIODS = ("HOUR", "DAY", "MONTH", "QUARTER", "YEAR")
 FIELDS = ("dato", "aflaest", "kwh", "dkk_inkl_moms", "dkk_ekskl_moms",
           "dkk_pr_kwh_inkl_moms", "dkk_pr_kwh_ekskl_moms",
           "kwh_gennemsnit_for_aar", "dkk_gennemsnit_for_aar_inkl_moms")
-LIMITS = {"HOUR": 20000, "DAY": 2500, "MONTH": 120, "QUARTER": 60, "YEAR": 30}
+LIMITS = {"HOUR": 32000, "DAY": 2500, "MONTH": 120, "QUARTER": 60, "YEAR": 30}
+# 36 months of hourly readings including daylight saving days fit within 32,000.
+MAX_HOUR_DAYS = 1120
+HOUR_BATCH_SIZE = 21
 
 
 def _clean_row(raw: Mapping) -> dict | None:
@@ -104,6 +107,53 @@ def missing_archive_months(
     return [(year, month) for year, month in requested
             if f"{year}-{month:02d}" in recent
             or f"{year}-{month:02d}" not in cached]
+
+
+def valid_hour_selection(value: int | str) -> bool:
+    """Explicitly allow all measured dates or a bounded number of days."""
+    return (value == "all" or (
+        type(value) is int and value in (0, 7, 14, 30, 90, 180, 365)
+    ))
+
+
+def select_hour_dates(
+    measured_days: list[dict],
+    saved_hours: list[dict],
+    selection: int | str,
+    *,
+    earliest_month: str | None = None,
+    checked_dates: list[str] | None = None,
+) -> list[str]:
+    """Plan missing hourly dates, newest first and limited to chosen month range.
+
+    Exact per-date completion is recorded only when the API succeeded and
+    returned readings. A complete 23–25 hour day may also be inferred from
+    previously saved measured points to support upgrading from older releases.
+    """
+    if not valid_hour_selection(selection):
+        raise ValueError("Ugyldigt valg af timedata")
+    if selection == 0:
+        return []
+    days = sorted({
+        row["dato"][:10] for row in measured_days
+        if isinstance(row, dict) and isinstance(row.get("dato"), str)
+        and row.get("aflaest") is True and row.get("kwh") is not None
+        and (earliest_month is None or row["dato"][:7] >= earliest_month)
+    }, reverse=True)
+    selected = days if selection == "all" else days[:selection]
+    selected = selected[:MAX_HOUR_DAYS]
+    covered: dict[str, set[str]] = {}
+    for row in saved_hours:
+        stamp = row.get("dato") if isinstance(row, dict) else None
+        if not isinstance(stamp, str) or len(stamp) < 13:
+            continue
+        if row.get("aflaest") is True and row.get("kwh") is not None:
+            covered.setdefault(stamp[:10], set()).add(stamp)
+    seen = set(checked_dates or [])
+    return [
+        day for day in selected
+        if day not in seen and len(covered.get(day, set())) < 23
+    ]
 
 
 def missing_hour_dates(
