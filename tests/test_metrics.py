@@ -80,6 +80,38 @@ class MeasuredDaysTests(unittest.TestCase):
         self.assertEqual(len(attr["daily_history"]), 7)
         self.assertEqual(result.attributes["day_2_kwh"]["date"], "2026-11-05")
 
+    def test_danish_weekday_and_real_date_are_visible(self):
+        rows = [
+            {"dato": "2026-11-05T00:00:00", "aflaest": True, "kwh": 3.59,
+             "dkk_inkl_moms": 12.69},
+        ]
+        result = self.snapshot(rows)
+        self.assertEqual(metrics.day_label(date(2026, 11, 5)), "Torsdag 05/11-26")
+        self.assertEqual(metrics.day_label(date(2026, 11, 10)), "Tirsdag 10/11-26")
+        self.assertEqual(
+            result.attributes["day_2_kwh"]["date_label"], "Torsdag 05/11-26"
+        )
+        self.assertEqual(
+            result.attributes["day_2_cost"]["weekday"], "Torsdag"
+        )
+        self.assertEqual(
+            result.attributes["last_7_days_kwh"]["daily_history"][-3]["date_label"],
+            "Torsdag 05/11-26",
+        )
+
+    def test_date_labels_roll_over_week_and_year(self):
+        result = self.snapshot(
+            [{"dato": "2025-12-31", "aflaest": True, "kwh": 2.0}],
+            today=date(2026, 1, 2),
+        )
+        self.assertEqual(
+            result.attributes["day_2_kwh"]["date_label"], "Onsdag 31/12-25"
+        )
+        self.assertEqual(
+            result.attributes["day_1_kwh"]["date_label"], "Torsdag 01/01-26"
+        )
+        self.assertIsNone(result.values["day_1_kwh"])
+
     def test_recent_days_all_unread_remain_unknown(self):
         result = self.snapshot([
             {"dato": "2026-11-06", "aflaest": False, "kwh": 0.0,
