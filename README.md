@@ -2,7 +2,7 @@
 
 Få overblik over dit elforbrug og dine elpriser fra **Min OK** direkte i Home Assistant. Integrationen finder automatisk din elaftale og opretter sensorer til både forbrug og omkostninger.
 
-**Version 0.2.2 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
+**Version 0.2.3 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
 
 > **Uofficiel integration:** Projektet er udviklet uafhængigt af OK og er ikke tilknyttet eller understøttet af OK.
 
@@ -74,7 +74,7 @@ type: custom:ok-el-history-card
 ```
 
 4. Gem kortet. Det viser straks de historiske målinger, integrationen allerede har hentet.
-5. Tryk på **Hent historik** i kortet for at indlæse ældre data. Du kan vælge 6, 12, 24 eller 36 måneders dagsdata samt timeforbrug for 0, 7, 14 eller 30 aflæste dage. En import kan tage tid, og data bliver hentet i baggrunden.
+5. Tryk på **Hent historik** i kortet for at indlæse ældre data. Du kan vælge 6, 12, 24 eller 36 måneders dagsdata samt timeforbrug for 7, 14, 30, 90, 180, 365 dage eller alle aflæste dage. En import kan tage tid, og data bliver hentet i baggrunden.
 
 **Hvis korttypen ikke vises:** Opdatér til **0.2.1**, genstart Home Assistant, og genindlæs browseren med **Cmd+Shift+R / Ctrl+Shift+R**. Denne version retter automatisk registrering af kortet i Home Assistants Lovelace-ressourcer.
 
@@ -82,9 +82,11 @@ Hvis din installation bruger YAML-styrede dashboardressourcer, eller hvis automa
 
 **Nyt i 0.2.2:** Hold musen over en søjle, eller tryk på den på mobil, for at se **dato, kWh, kroner inkl. moms og kr./kWh** samlet. Den lokale historikimport viser nu fremdrift under hentningen og genbruger allerede gemte ældre måneder og fuldførte timedage. De to nyeste måneder kontrolleres stadig for forsinkede målinger og rettelser.
 
+**Nyt i 0.2.3:** Valget **Timedata → Alle aflæste dage** fjerner den gamle 30-dagesgrænse. Du kan også vælge 90, 180 eller 365 dage. Importen arbejder i mindre portioner på højst 21 dage, gemmer efter hver portion og kan fortsætte efter en afbrydelse. Timer vises i overskuelige vinduer på cirka 30 dage, som du kan bladre frem og tilbage i. Knappen **Opdater visning** bliver straks blå med teksten *Opdaterer…*, og viser *Opdateret*, når kortet er genindlæst. Den knap genindlæser eksisterende lokal historik; det er fortsat **Hent historik**, der kontakter OK.
+
 **Privat og vedvarende:** Historiske data gemmes i Home Assistants lokale, private `.storage`-lager, ikke som tusindvis af sensorattributter. De forbliver tilgængelige efter genstart og bliver opdateret, når integrationen henter nye aflæsninger. Kun Home Assistant-administratorer kan tilgå den fulde historik via kortets godkendte API.
 
-**Omfang:** Historikimporten understøtter aktuelt op til 36 måneders dagsdata og 30 aflæste dage med timedata pr. import, plus månedlige, kvartalsvise og årlige sammenligninger for perioden. Den indeholder **ikke fakturaer**. Antallet af faktisk tilgængelige målinger afhænger af OK.
+**Omfang:** Historikimporten understøtter aktuelt op til 36 måneders dagsdata og timedata for alle tilgængelige aflæste dage inden for den valgte periode, plus månedlige, kvartalsvise og årlige sammenligninger for perioden. Den indeholder **ikke fakturaer**. Antallet af faktisk tilgængelige målinger afhænger af OK.
 
 ### Sådan skal tallene forstås
 
@@ -102,6 +104,11 @@ Priserne er baseret på oplysningerne fra Min OK og kan afvige fra de endelige b
 - Integrationen kommunikerer med OK via HTTPS og kræver ingen åbne indgående porte.
 
 ## Seneste ændringer
+
+**0.2.3 – Fuld timehistorik og tydelig opdateringsknap**
+
+Timedata kan nu hentes for 90, 180, 365 dage eller alle tilgængelige aflæste dage inden for de valgte måneder (højst 36). Importen gemmer undervejs i 21-dagesportioner og fortsætter efter Home Assistant-genstart. Timegrafen kan bladres gennem ældre perioder uden at indlæse tusindvis af søjler på én gang. *Opdater visning* bliver blå ved klik og viser tydeligt, når visningen er opdateret.
+
 
 **0.2.2 – Hurtigere historik og detaljer ved søjler**
 
