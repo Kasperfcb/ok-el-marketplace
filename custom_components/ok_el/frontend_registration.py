@@ -25,7 +25,10 @@ async def async_register_card(hass: HomeAssistant) -> None:
 
     async def _register_resource() -> None:
         lovelace = hass.data.get("lovelace")
-        if lovelace is None or getattr(lovelace, "mode", None) != "storage":
+        # Home Assistant stores the resource configuration mode in
+        # LovelaceData.resource_mode (not .mode).  The old check caused the
+        # integration to skip registration on otherwise working installations.
+        if lovelace is None or getattr(lovelace, "resource_mode", None) != "storage":
             _LOGGER.info(
                 "OK El history card can be added manually as a module resource at %s",
                 BASE_URL + "/ok-el-history-card.js",
@@ -49,10 +52,12 @@ async def async_register_card(hass: HomeAssistant) -> None:
             )
             if existing is None:
                 await resources.async_create_item({"res_type": "module", "url": url})
+                _LOGGER.info("Registered OK El dashboard card at %s", url)
             elif existing.get("url") != url:
                 await resources.async_update_item(
                     existing["id"], {"res_type": "module", "url": url}
                 )
+                _LOGGER.info("Updated OK El dashboard card to %s", url)
         except Exception:  # noqa: BLE001
             # The integration and sensors must remain usable even if a dashboard
             # uses YAML resource mode or frontend APIs change in later HA versions.
