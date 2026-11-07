@@ -129,7 +129,11 @@ class CardResourceTests(unittest.IsolatedAsyncioTestCase):
         hass = FakeHomeAssistant("storage", resources)
         await self.mod.async_register_card(hass)
         self.assertEqual(len(resources.items), 1)
-        self.assertIn("?v=0.2.1", resources.items[0]["url"])
+        import json
+        expected = json.loads(
+            (SOURCE.parent / "manifest.json").read_text(encoding="utf-8")
+        )["version"]
+        self.assertIn(f"?v={expected}", resources.items[0]["url"])
 
     async def test_does_not_modify_yaml_resources(self):
         resources = FakeResources()
