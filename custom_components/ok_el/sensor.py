@@ -134,7 +134,8 @@ class OKElSensor(CoordinatorEntity[OKElCoordinator], SensorEntity):
             label = details.get("date_label")
             if isinstance(label, str):
                 kind = "Forbrug" if key.endswith("_kwh") else "Pris"
-                return f"{kind} – {label}"
+                order = int(key.split("_")[1])
+                return f"{kind} – {order:02d} – {label}"
         return self.entity_description.name
 
     @property
