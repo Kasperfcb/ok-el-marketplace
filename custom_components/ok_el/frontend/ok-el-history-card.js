@@ -38,7 +38,7 @@ class OKElHistoryCard extends HTMLElement {
   connectedCallback() {
     this._init();
     this._fetch();
-    if(!this._timer) this._timer=setInterval(()=>this._fetch(),30000);
+    if(!this._timer) this._timer=setInterval(()=>{if(this._busy || Date.now()-this._lastFetch>30000)this._fetch();},6000);
   }
   disconnectedCallback() {
     if(this._timer) clearInterval(this._timer);
@@ -68,6 +68,19 @@ class OKElHistoryCard extends HTMLElement {
         .stat strong{font-size:clamp(16px,2.5vw,26px);font-weight:700;overflow-wrap:anywhere}
         .chartbox{border:1px solid var(--divider-color,#3a4659);border-radius:11px;padding:13px;margin-top:12px}
         .chartbox svg{width:100%;min-height:180px;display:block}
+        .chartarea{position:relative;min-height:180px}
+        .graphtip{position:absolute;z-index:5;min-width:190px;max-width:260px;padding:12px 14px;
+          border:1px solid var(--divider-color,#426079);border-radius:11px;
+          background:var(--ha-card-background,var(--card-background-color,#152334));
+          color:var(--primary-text-color,#f5f8ff);box-shadow:0 8px 25px rgba(0,0,0,.38);
+          pointer-events:none;font-variant-numeric:tabular-nums}
+        .graphtip[hidden]{display:none}
+        .graphtip strong{display:block;font-size:13px;margin-bottom:8px}
+        .graphtip .tiprow{display:flex;justify-content:space-between;gap:20px;font-size:13px;line-height:1.85}
+        .graphtip .tiprow span{color:var(--secondary-text-color,#b9c7d5)}
+        .graphtip .tiprow b{white-space:nowrap}
+        .chartarea svg rect:focus-visible{stroke:var(--primary-text-color,#fff);stroke-width:2}
+
         .charthead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
         .tablewrap{margin-top:16px;max-height:340px;overflow:auto}
         table{border-collapse:collapse;width:100%;font-size:13px}
@@ -109,7 +122,15 @@ class OKElHistoryCard extends HTMLElement {
               </select>
             </div>
           </div>
-          <svg id="chart" viewBox="0 0 900 260" role="img" aria-label="Graf over elforbrug"></svg>
+          <div class="chartarea" id="chartarea">
+            <svg id="chart" viewBox="0 0 900 260" role="img" aria-label="Graf over elforbrug"></svg>
+            <div id="tooltip" class="graphtip" role="status" hidden>
+              <strong id="tipdate">—</strong>
+              <div class="tiprow"><span>Elforbrug</span><b id="tipkwh">—</b></div>
+              <div class="tiprow"><span>Pris inkl. moms</span><b id="tipcost">—</b></div>
+              <div class="tiprow"><span>Pris pr. kWh</span><b id="tipunit">—</b></div>
+            </div>
+          </div>
         </div>
         <div class="tablewrap"><table><thead><tr><th>Dato og periode</th><th class="num">kWh</th>
           <th class="num">Kr. inkl. moms</th><th class="num">Kr./kWh</th></tr></thead>
@@ -153,6 +174,7 @@ class OKElHistoryCard extends HTMLElement {
       this._rows=Array.isArray(result.rows)?result.rows:[];
       this._coverage=result.coverage||{};
       this._busy=!!result.busy;
+      this._progress=result.progress||{};
       this._error=result.last_error||"";
       this._lastCompleted=result.last_completed||"";
       this._lastFetch=Date.now();
@@ -171,6 +193,7 @@ class OKElHistoryCard extends HTMLElement {
     try {
       const result=await this._hass.callWS(q);
       this._busy=!!result.busy;
+      this._progress={completed:0,total:0,stage:"Starter historikimport..."};
       this._error="";
       this._renderStatus();
     }catch(e){
@@ -198,9 +221,31 @@ class OKElHistoryCard extends HTMLElement {
     if(text!==undefined)el.textContent=String(text);
     return el;
   }
+  _hideTooltip() {
+    const tooltip=this.shadowRoot.getElementById("tooltip");
+    if(tooltip)tooltip.hidden=true;
+  }
+  _showTooltip(row,event,target) {
+    const root=this.shadowRoot;
+    const tooltip=root.getElementById("tooltip");
+    if(!tooltip)return;
+    root.getElementById("tipdate").textContent=this._date(row.dato);
+    root.getElementById("tipkwh").textContent=this._fmt(row.kwh)+" kWh";
+    root.getElementById("tipcost").textContent=this._fmt(row.dkk_inkl_moms)+" kr.";
+    root.getElementById("tipunit").textContent=this._fmt(row.dkk_pr_kwh_inkl_moms,3)+" kr./kWh";
+    tooltip.hidden=false;
+    const area=root.getElementById("chartarea").getBoundingClientRect();
+    const spot=target.getBoundingClientRect();
+    const x=typeof event.clientX==="number"&&event.clientX>0?event.clientX:spot.left+spot.width/2;
+    const y=typeof event.clientY==="number"&&event.clientY>0?event.clientY:spot.top+spot.height/2;
+    const box=tooltip.getBoundingClientRect();
+    tooltip.style.left=Math.max(4,Math.min(x-area.left+12,area.width-box.width-4))+"px";
+    tooltip.style.top=Math.max(4,Math.min(y-area.top-box.height-10,area.height-box.height-4))+"px";
+  }
   _chart(rows) {
     const svg=this.shadowRoot.getElementById("chart");
     svg.replaceChildren();
+    this._hideTooltip();
     const data=rows.filter(r=>this._num(r[this._metric]));
     if(!data.length){
       svg.appendChild(this._svg("text",{x:450,y:132,fill:"currentColor",opacity:".65","text-anchor":"middle","font-size":16},"Ingen aflæste data for den valgte periode"));
@@ -217,9 +262,22 @@ class OKElHistoryCard extends HTMLElement {
       const value=r[this._metric];if(!this._num(value))return;
       const height=Math.max(1,value/max*h);
       const rect=this._svg("rect",{x:left+i*cell+gap/2,y:top+h-height,width:Math.max(.5,cell-gap),height,rx:Math.min(3,cell/5),fill:this._metric==="kwh"?"#45cbb6":"#77aaff"});
-      rect.appendChild(this._svg("title",{},this._date(r.dato)+" · "+this._fmt(value)));
       svg.appendChild(rect);
+      const hit=this._svg("rect",{
+        x:left+i*cell,y:top,width:Math.max(.5,cell),height:h,
+        fill:"transparent",tabindex:0,role:"button",
+        "aria-label":this._date(r.dato)+", "+this._fmt(r.kwh)+" kilowatt-timer, "+
+          this._fmt(r.dkk_inkl_moms)+" kroner"
+      });
+      hit.style.cursor="crosshair";
+      hit.addEventListener("pointerenter",event=>this._showTooltip(r,event,hit));
+      hit.addEventListener("pointermove",event=>this._showTooltip(r,event,hit));
+      hit.addEventListener("focus",event=>this._showTooltip(r,event,hit));
+      hit.addEventListener("blur",()=>this._hideTooltip());
+      hit.addEventListener("click",event=>this._showTooltip(r,event,hit));
+      svg.appendChild(hit);
     });
+    svg.addEventListener("pointerleave",()=>this._hideTooltip(),{once:true});
     const marks=Math.min(6,rows.length);
     for(let i=0;i<marks;i++){
       const index=marks===1?0:Math.round((rows.length-1)*i/(marks-1));
@@ -231,7 +289,14 @@ class OKElHistoryCard extends HTMLElement {
     const status=this.shadowRoot.getElementById("status");
     if(!status)return;
     const pieces=Object.entries(this._coverage).map(([k,v])=>k+": "+v).join(" · ");
-    status.textContent=(this._busy?"Henter historik fra OK; det kan tage lidt tid. ":"")+
+    const p=this._progress||{};
+    const stage=typeof p.stage==="string"?p.stage:"";
+    const pct=p.total>0?Math.min(100,Math.round(100*p.completed/p.total)):0;
+    const progress=this._busy?(
+      "Henter historik: "+(p.total>0?p.completed+"/"+p.total+" trin ("+pct+"%). ":"")+
+      (stage||"Starter…")+". "
+    ):stage?stage+". ":"";
+    status.textContent=progress+
       (this._error?this._error+" ":"")+
       "Lokalt gemt: "+(pieces||"ingen data endnu")+
       (this._lastCompleted?" · Sidste import: "+this._lastCompleted:"");
