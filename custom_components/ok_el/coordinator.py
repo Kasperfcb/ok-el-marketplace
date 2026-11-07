@@ -14,6 +14,7 @@ from .client import OKAPIError, OKClient
 from .const import CONF_EMAIL, CONF_PASSWORD, DOMAIN, UPDATE_INTERVAL
 from .dates import COPENHAGEN, hour_window, latest_metered_day, month_window, previous_months, year_window
 from .metrics import Snapshot, build_snapshot
+from .history import HistoryManager
 from .normalize import OKDataError, normalize_comparison, normalize_intervals
 
 _LOGGER = logging.getLogger(__name__)
@@ -88,7 +89,8 @@ def fetch_snapshot(email: str, password: str) -> Snapshot:
 class OKElCoordinator(DataUpdateCoordinator[Snapshot]):
     """Coordinate one slow refresh for all sensors."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry,
+                 history_manager: HistoryManager) -> None:
         super().__init__(
             hass,
             _LOGGER,
@@ -98,14 +100,17 @@ class OKElCoordinator(DataUpdateCoordinator[Snapshot]):
             always_update=False,
         )
         self.entry = entry
+        self.history_manager = history_manager
 
     async def _async_update_data(self) -> Snapshot:
         try:
-            return await self.hass.async_add_executor_job(
+            snapshot = await self.hass.async_add_executor_job(
                 fetch_snapshot,
                 self.entry.data[CONF_EMAIL],
                 self.entry.data[CONF_PASSWORD],
             )
+            await self.history_manager.async_ingest(snapshot.history)
+            return snapshot
         except OKAPIError as exc:
             # Never include credentials, agreement ID or API response bodies.
             if "Login blev ikke godkendt" in str(exc):
