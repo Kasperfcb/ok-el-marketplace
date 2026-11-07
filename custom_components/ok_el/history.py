@@ -234,12 +234,36 @@ class HistoryManager:
             self.rows = updated
             await self._save()
 
-    def view(self, period: str) -> dict[str, Any]:
-        if period not in PERIODS:
-            raise ValueError("Ugyldig periode")
+    def view(self, period: str, offset: int = 0) -> dict[str, Any]:
+        """Paginate hourly graphs to keep mobile HA dashboards responsive.
+
+        All historical values remain stored locally; the UI loads 30-day
+        windows on demand instead of transferring 30,000 hourly rows at once.
+        """
+        if period not in PERIODS or not 0 <= offset <= 32000:
+            raise ValueError("Ugyldig historikperiode")
+        series = self.rows.get(period, [])
+        page: dict[str, Any] = {"total": len(series)}
+        if period == "HOUR":
+            window_size = 720
+            offset = min(offset, max(0, len(series) - 1))
+            last = max(0, len(series) - offset)
+            first = max(0, last - window_size)
+            visible = series[first:last]
+            page.update({
+                "offset": offset,
+                "page_size": window_size,
+                "has_older": first > 0,
+                "has_newer": offset > 0,
+                "first": first + 1 if visible else 0,
+                "last": last,
+            })
+        else:
+            visible = series
         return {
             "period": period,
-            "rows": self.rows.get(period, []),
+            "rows": visible,
+            "page": page,
             "coverage": history_summary(self.rows),
             "busy": self.busy,
             "progress": self.progress,
