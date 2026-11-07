@@ -1,38 +1,78 @@
-# OK El (uofficiel) til Home Assistant
+# OK El til Home Assistant
 
-Uofficiel Home Assistant-integration til at vise elforbrug
-og priser fra [Min OK](https://www.ok.dk/min-ok-forside).
-Denne integration er ikke udgivet eller understøttet af OK.
+Få overblik over dit elforbrug og dine elpriser fra **Min OK** direkte i Home Assistant. Integrationen finder automatisk din elaftale og opretter sensorer til både forbrug og omkostninger.
 
-**Testversion 0.1.1:** API-kald er testet mod Min OK, men hele Home Assistant-integrationen er endnu ikke valideret i en kørende Home Assistant-installation. Installér kun, hvis du accepterer at teste en community-integration.
+**Version 0.1.1 · 18 sensorer · Danmark · Automatisk opdatering hver 6. time**
+
+> **Uofficiel integration:** Projektet er udviklet uafhængigt af OK og er ikke tilknyttet eller understøttet af OK.
 
 <!-- ha-marketplace:exclude-start -->
-[![Åbn OK El i Home Assistant Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Kasperfcb&repository=ok-el-marketplace&category=integration)
+[![Tilføj OK El til Home Assistant Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Kasperfcb&repository=ok-el-marketplace&category=integration)
 
 ## Installation
 
-Du skal bruge **Home Assistant 2026.11 eller nyere**. Klik på knappen ovenfor for at åbne denne integration direkte i din egen Marketplace, eller tilføj GitHub-linket manuelt:
+**Krav:** Home Assistant 2026.11 eller nyere.
 
+**Via Marketplace**
 
+1. Klik på knappen **Åbn i Home Assistant Marketplace** ovenfor.
+2. Tilføj repositoryet, og installér **OK El**.
+3. Genstart Home Assistant, hvis Marketplace beder om det.
+4. Åbn **Indstillinger → Enheder og tjenester → Tilføj integration**.
+5. Søg efter **OK El**, og log ind med dine Min OK-oplysninger.
 
-1. I Home Assistant 2026.11 eller nyere: **Indstillinger → Marketplace → Add from link**.
-2. Indsæt repository-URL'en og vælg kategorien **Integration**.
-3. Installer **OK El (uofficiel)**.
-4. Gå til **Indstillinger → Enheder og tjenester → Tilføj integration → OK El**.
-5. Log ind med din egen OK-mail og adgangskode. Aftalenummer findes automatisk.
+Du behøver ikke kende dit aftalenummer. Det bliver fundet automatisk, når du logger ind.
+
+**Manuel tilføjelse til Marketplace:** Vælg **Add from link**, og brug repositoryadressen:
+
+`https://github.com/Kasperfcb/ok-el-marketplace`
 
 <!-- ha-marketplace:exclude-end -->
 
-Data opdateres cirka hver 6. time og kan være forsinkede i OK's system.
-18 sensorer viser aflæste kWh- og pristal. Manglende data vises som ukendt.
-Historiske periodetal er **ikke** en kumulativ energimåler til
-Home Assistants Energi-dashboard.
+## Funktioner
 
-**Sikkerhed:** Adgangskoden gemmes lokalt i Home Assistants config-entry-lager,
-ikke på GitHub; cookies holdes midlertidigt i hukommelsen.
-Koden bruger et uofficielt OK-web-API, som kan ændre sig.
+- **Automatisk opsætning:** Log ind med din Min OK-konto. Aftalenummeret bliver fundet automatisk.
+- **Elforbrug:** Se registrerede målinger for timer, dage, måneder, kvartaler og år.
+- **Priser:** Se omkostninger i kroner og priser pr. kWh, inklusive moms.
+- **18 sensorer:** Klar til Home Assistant-dashboards og automatiseringer.
+- **Løbende opdatering:** Data hentes cirka hver sjette time.
+- **Opdateringer via Marketplace:** Nye versioner kan installeres uden at konfigurere kontoen igen.
 
+## Sensorer
 
-## Seneste opdatering (0.1.1)
+| Område | Tilgængelige oplysninger |
+| --- | --- |
+| **Timer** | Seneste aflæste time: forbrug og pris pr. kWh |
+| **Dage** | Dagens forbrug og pris; seneste aflæste dags forbrug, pris og gennemsnitspris |
+| **Måneder** | Denne og sidste måneds forbrug og pris; antal aflæste dage i indeværende måned |
+| **Kvartaler** | Dette kvartals forbrug og pris |
+| **År** | Dette og sidste års forbrug og pris |
 
-Ny sensor: **Aflæste dage denne måned**. Den tæller kun faktiske kWh-aflæsninger, ikke dage hvor OK endnu ikke har data. De 17 eksisterende sensorer bevares med samme identiteter. Efter opdatering skal Home Assistant genstartes for at indlæse den nye sensor.
+### Sådan skal tallene forstås
+
+OK's målerdata kan være forsinkede. Hvis en aflæsning ikke er tilgængelig, viser integrationen **Ukendt** i stedet for at registrere et fejlagtigt forbrug på 0 kWh.
+
+Priserne er baseret på oplysningerne fra Min OK og kan afvige fra de endelige beløb på din faktura.
+
+**Home Assistants Energi-dashboard:** De nuværende sensorer viser registrerede periodeværdier. De er ikke en kumulativ elmåler og er derfor endnu ikke beregnet til direkte brug som energikilde i Energi-dashboardet.
+
+## Privatliv og sikkerhed
+
+- Loginoplysninger opbevares i Home Assistants lokale konfigurationslager.
+- Sessionscookies bruges under datahentningen og opbevares kun midlertidigt i hukommelsen.
+- Dine loginoplysninger og forbrugsdata bliver ikke gemt i projektets GitHub-repository.
+- Integrationen kommunikerer med OK via HTTPS og kræver ingen åbne indgående porte.
+
+## Seneste ændringer
+
+**0.1.1 – Aflæste dage denne måned**
+
+Tilføjer sensoren **Aflæste dage denne måned**, som tæller antallet af dage med en faktisk kWh-aflæsning. De eksisterende 17 sensorer og deres identiteter er bevaret.
+
+Installation, login og opdatering fra 0.1.0 til 0.1.1 er afprøvet i en kørende Home Assistant-installation.
+
+Se [versionshistorikken](https://github.com/Kasperfcb/ok-el-marketplace/releases) for udgivelser, eller [opret en fejlrapport](https://github.com/Kasperfcb/ok-el-marketplace/issues), hvis noget ikke fungerer.
+
+---
+
+*Denne integration anvender Min OK's uofficielle web-API. Ændringer hos OK kan påvirke funktionaliteten.*
