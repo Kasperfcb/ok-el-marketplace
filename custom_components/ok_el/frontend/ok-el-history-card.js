@@ -11,6 +11,8 @@ class OKElHistoryCard extends HTMLElement {
     this._period="DAY";
     this._metric="kwh";
     this._limit="30";
+    this._hourOffset=0;
+    this._hourPage={};
     this._rows=[];
     this._coverage={};
     this._busy=false;
@@ -71,6 +73,10 @@ class OKElHistoryCard extends HTMLElement {
 
         .tabs,.controls,.archive-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
         .tabs{margin-bottom:16px}
+        .hourpager{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+        .hourpager[hidden]{display:none}
+        .hourpager span{font-size:12px;color:var(--secondary-text-color,#98aac3)}
+
         .tabs button{flex:1;min-width:68px}
         .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
         .stat{border:1px solid var(--divider-color,#3a4659);border-radius:11px;padding:16px;background:var(--secondary-background-color,#1f2c40)}
@@ -113,6 +119,11 @@ class OKElHistoryCard extends HTMLElement {
           <button data-period="HOUR">Timer</button><button data-period="DAY">Dage</button>
           <button data-period="MONTH">Måneder</button><button data-period="QUARTER">Kvartaler</button>
           <button data-period="YEAR">År</button>
+        </div>
+        <div class="hourpager" id="hourpager" hidden>
+          <button id="older" title="Vis ældre timer">← Ældre timer</button>
+          <span id="hourrange">—</span>
+          <button id="newer" title="Vis nyere timer">Nyere timer →</button>
         </div>
         <div class="cards">
           <div class="stat"><small>Registreret forbrug</small><strong id="sumkwh">—</strong></div>
@@ -169,6 +180,7 @@ class OKElHistoryCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-period]").forEach(button=>
       button.addEventListener("click",()=>{
         this._period=button.dataset.period;
+        this._hourOffset=0;
         this._limit=["HOUR","DAY"].includes(this._period)?"30":"all";
         this.shadowRoot.getElementById("limit").value=this._limit;
         this._fetch();
@@ -181,6 +193,18 @@ class OKElHistoryCard extends HTMLElement {
       this._limit=event.target.value;this._render();
     });
     this.shadowRoot.getElementById("chart").addEventListener("pointerleave",()=>this._hideTooltip());
+    this.shadowRoot.getElementById("older").addEventListener("click",()=>{
+      if(this._hourPage.has_older){
+        this._hourOffset+=this._hourPage.page_size||720;
+        this._fetch();
+      }
+    });
+    this.shadowRoot.getElementById("newer").addEventListener("click",()=>{
+      if(this._hourPage.has_newer){
+        this._hourOffset=Math.max(0,this._hourOffset-(this._hourPage.page_size||720));
+        this._fetch();
+      }
+    });
     this.shadowRoot.getElementById("reload").addEventListener("click",()=>this._fetch(true));
     this.shadowRoot.getElementById("import").addEventListener("click",()=>this._import());
   }
@@ -216,9 +240,11 @@ class OKElHistoryCard extends HTMLElement {
     let success=false;
     try{
       const q={type:"ok_el/history",period:this._period};
+      if(this._period==="HOUR")q.offset=this._hourOffset;
       if(this._config.entry_id)q.entry_id=this._config.entry_id;
       const result=await this._hass.callWS(q);
       this._rows=Array.isArray(result.rows)?result.rows:[];
+      this._hourPage=result.page||{};
       this._coverage=result.coverage||{};
       this._busy=!!result.busy;
       this._progress=result.progress||{};
@@ -367,6 +393,15 @@ class OKElHistoryCard extends HTMLElement {
   }
   _render() {
     if(!this._setup)return;
+    const pager=this.shadowRoot.getElementById("hourpager");
+    pager.hidden=this._period!=="HOUR";
+    if(this._period==="HOUR"){
+      const page=this._hourPage||{};
+      this.shadowRoot.getElementById("older").disabled=!page.has_older;
+      this.shadowRoot.getElementById("newer").disabled=!page.has_newer;
+      this.shadowRoot.getElementById("hourrange").textContent=
+        "Timer "+(page.first||0)+"–"+(page.last||0)+" af "+(page.total||0);
+    }
     this.shadowRoot.querySelectorAll("[data-period]").forEach(el=>el.classList.toggle("active",el.dataset.period===this._period));
     this.shadowRoot.querySelectorAll("[data-metric]").forEach(el=>el.classList.toggle("active",el.dataset.metric===this._metric));
     const sorted=[...this._rows].sort((a,b)=>String(a.dato||"").localeCompare(String(b.dato||"")));
