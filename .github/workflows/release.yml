@@ -1,53 +1,91 @@
-name: Publish Marketplace release
+name: Publish stable OK El release
+
+# No push or pull_request trigger: only an explicit approved run
+# is allowed to offer a new stable version to Marketplace users.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Stable version to publish, e.g. 0.2.2"
+        type: string
+        required: true
+      confirmation:
+        description: "Type PUBLISH to release to every stable Marketplace user"
+        type: string
+        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: ok-el-release
+  group: ok-el-stable-release
   cancel-in-progress: false
 
 jobs:
-  release:
+  stable-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Require explicit approval and main branch
+        env:
+          REQUESTED_VERSION: \${{ inputs.version }}
+          CONFIRMATION: \${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "PUBLISH" ]; then
+            echo "::error::Confirmation must be PUBLISH"; exit 1
+          fi
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Stable releases must run from main"; exit 1
+          fi
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          requested = os.environ["REQUESTED_VERSION"]
+          assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", requested), "Stable SemVer required"
+          manifest = json.loads(Path("custom_components/ok_el/manifest.json").read_text())
+          assert manifest["domain"] == "ok_el"
+          assert manifest["version"] == requested, "Requested and manifest versions differ"
+          print("Approved stable version:", requested)
+          PY
+
       - name: Validate with Home Assistant hassfest
         uses: home-assistant/actions/hassfest@master
-      - name: Verify version and file safety
+
+      - name: Validate release files and absence of secrets
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import json, re
-          root=Path(".")
-          manifest=json.loads((root/"custom_components/ok_el/manifest.json").read_text())
-          version=manifest["version"]
-          assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version), version
-          assert manifest["domain"]=="ok_el"
-          assert (root/"hacs.json").is_file()
-          assert (root/"RELEASE_NOTES.md").is_file()
-          banned=["config.json","cookies.json","session.json"]
-          assert not any((root/p).exists() for p in banned)
+          import json
+          root = Path(".")
+          assert (root / "hacs.json").is_file()
+          assert (root / "RELEASE_NOTES.md").is_file()
+          assert (root / "custom_components/ok_el/frontend/ok-el-history-card.js").is_file()
+          forbidden = ["config.json", "cookies.json", "session.json", "data"]
+          assert not any((root / item).exists() for item in forbidden)
           assert not any(root.rglob("*.har"))
-          assert not (root/"data").exists()
-          print("Release validated:",version)
+          assert not any(root.rglob(".env"))
+          print("Public release contains only expected code and documentation.")
           PY
-      - name: Run offline sensor tests
+
+      - name: Run offline unit tests
         run: python3 -m unittest discover -s tests -v
-      - name: Validate bundled history dashboard JavaScript
+
+      - name: Check dashboard JavaScript
         run: node --check custom_components/ok_el/frontend/ok-el-history-card.js
-      - name: Publish release for manifest version
+
+      - name: Publish stable release only after all checks pass
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: \${{ github.token }}
+          REQUESTED_VERSION: \${{ inputs.version }}
         run: |
-          version="$(python3 -c 'import json;print(json.load(open("custom_components/ok_el/manifest.json"))["version"])')"
-          if gh release view "$version" >/dev/null 2>&1; then
-            echo "Release $version already exists; not changing it."
-            exit 0
+          if gh release view "$REQUESTED_VERSION" > /dev/null 2>&1; then
+            echo "::error::Release $REQUESTED_VERSION already exists; stable releases are immutable."
+            exit 1
           fi
-          gh release create "$version" --target "$GITHUB_SHA" --title "OK El $version" --notes-file RELEASE_NOTES.md
-          echo "Published release $version."
+          gh release create "$REQUESTED_VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "OK El $REQUESTED_VERSION" \
+            --notes-file RELEASE_NOTES.md \
+            --latest
+          echo "Stable release $REQUESTED_VERSION published."
