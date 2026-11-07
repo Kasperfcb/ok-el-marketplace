@@ -1,22 +1,15 @@
-## Nyt i 0.2.0
+## Rettet i 0.2.1 – Historikkortet indlæses automatisk
 
-### Overblik over alle tilgængelige OK El-målinger
+- Rettet en fejl i integrationens registrering af **Lovelace-ressourcer** på nyere Home Assistant-versioner.
+- Dashboardkortet **OK El – Historik** kan nu indlæses som `custom:ok-el-history-card`, uden manuel registrering af JavaScript, når ressourcerne administreres via Home Assistants brugerflade.
+- Den tilhørende JavaScript-fil serveres gennem en gyldig statisk filsti, og eksisterende dashboardressourcer bevares.
+- Nye automatiske regressionstests kontrollerer registrering, opdatering og YAML-tilstand.
+- **Ingen ændringer** i OK-login, historikdata, priser eller de 34 eksisterende sensorer.
 
-- Et nyt **OK El – Historik**-dashboardkort med grafer, datotabeller og forbrugs-/prissummer for timer, dage, måneder, kvartaler og år.
-- Historikken lagres **privat i Home Assistant** og kan overleve genstart. Ingen store historikfelter i sensorer eller Home Assistant Recorder.
-- Hent **6–36 måneders dagsforbrug** og 0–30 aflæste dage med timeforbrug efter behov. Data importeres i baggrunden og genbruges ved efterfølgende besøg.
-- Afbrudte eller delvist mislykkede imports må ikke overskrive allerede gemte aflæsninger; korrektioner og faktisk 0 kWh understøttes.
-- **Dagsensorerne sorteres efter dato** med præfiks 01–07; de nyeste vises øverst.
-- Alle eksisterende 34 sensor-ID'er og loginindstillinger bevares.
-
-### Tilføj dashboardkortet
-
-Efter Marketplace-opdatering og genstart: **Rediger dashboard → Tilføj kort → Manuel**, og indsæt:
+**Efter opdatering:** Genstart Home Assistant og genindlæs browseren. Tilføj kortet med:
 
 ```yaml
 type: custom:ok-el-history-card
 ```
 
-Hvis korttypen ikke indlæses automatisk, tilføjes ressourcen `/ok-el-assets/ok-el-history-card.js` som JavaScript-modul under Dashboard-ressourcer.
-
-**Begrænsninger:** Det nye historikkort er ikke live-testet i Home Assistant endnu. Den eksisterende sensorintegration er bekræftet. Fakturaer og direkte Energi-dashboard-integration er endnu ikke understøttet.
+**Manuel reserve:** Hvis ressourcetilstanden er YAML, skal `/ok-el-assets/ok-el-history-card.js?v=0.2.1` registreres som JavaScript-modul. Det nye kort er stadig ikke verificeret live på brugerens HA-installation efter denne fejlrettelse.
