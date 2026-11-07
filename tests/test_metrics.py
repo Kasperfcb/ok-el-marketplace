@@ -86,17 +86,17 @@ class MeasuredDaysTests(unittest.TestCase):
              "dkk_inkl_moms": 12.69},
         ]
         result = self.snapshot(rows)
-        self.assertEqual(metrics.day_label(date(2026, 11, 5)), "Torsdag 05/11-26")
-        self.assertEqual(metrics.day_label(date(2026, 11, 10)), "Tirsdag 10/11-26")
+        self.assertEqual(metrics.day_label(date(2026, 11, 5)), "Torsdag d. 05/11-26")
+        self.assertEqual(metrics.day_label(date(2026, 11, 10)), "Tirsdag d. 10/11-26")
         self.assertEqual(
-            result.attributes["day_2_kwh"]["date_label"], "Torsdag 05/11-26"
+            result.attributes["day_2_kwh"]["date_label"], "Torsdag d. 05/11-26"
         )
         self.assertEqual(
             result.attributes["day_2_cost"]["weekday"], "Torsdag"
         )
         self.assertEqual(
             result.attributes["last_7_days_kwh"]["daily_history"][-2]["date_label"],
-            "Torsdag 05/11-26",
+            "Torsdag d. 05/11-26",
         )
 
     def test_date_labels_roll_over_week_and_year(self):
@@ -105,10 +105,10 @@ class MeasuredDaysTests(unittest.TestCase):
             today=date(2026, 1, 2),
         )
         self.assertEqual(
-            result.attributes["day_2_kwh"]["date_label"], "Onsdag 31/12-25"
+            result.attributes["day_2_kwh"]["date_label"], "Onsdag d. 31/12-25"
         )
         self.assertEqual(
-            result.attributes["day_1_kwh"]["date_label"], "Torsdag 01/01-26"
+            result.attributes["day_1_kwh"]["date_label"], "Torsdag d. 01/01-26"
         )
         self.assertIsNone(result.values["day_1_kwh"])
 
