@@ -2,7 +2,7 @@
 
 Få overblik over dit elforbrug og dine elpriser fra **Min OK** direkte i Home Assistant. Integrationen finder automatisk din elaftale og opretter sensorer til både forbrug og omkostninger.
 
-**Version 0.2.1 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
+**Version 0.2.2 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
 
 > **Uofficiel integration:** Projektet er udviklet uafhængigt af OK og er ikke tilknyttet eller understøttet af OK.
 
@@ -61,7 +61,7 @@ Sensorerne **Forbrug de seneste 7 afsluttede dage** og **Pris de seneste 7 afslu
 
 ## Historik-dashboard i Home Assistant
 
-I version 0.2.0 følger et dashboardkort med integrationen. Kortet viser **interaktive grafer, datotabeller og summer** for time-, dags-, måneds-, kvartals- og årsdata samt elpriser inkl. moms.
+Fra version 0.2.0 følger et dashboardkort med integrationen. Kortet viser **interaktive grafer, datotabeller og summer** for time-, dags-, måneds-, kvartals- og årsdata samt elpriser inkl. moms.
 
 **Sådan tilføjer du kortet**
 
@@ -79,6 +79,8 @@ type: custom:ok-el-history-card
 **Hvis korttypen ikke vises:** Opdatér til **0.2.1**, genstart Home Assistant, og genindlæs browseren med **Cmd+Shift+R / Ctrl+Shift+R**. Denne version retter automatisk registrering af kortet i Home Assistants Lovelace-ressourcer.
 
 Hvis din installation bruger YAML-styrede dashboardressourcer, eller hvis automatisk registrering stadig ikke virker, kan du tilføje `/ok-el-assets/ok-el-history-card.js?v=0.2.1` under **Indstillinger → Dashboards → ⋮ → Ressourcer** som **JavaScript-modul**. Opret kun ressourcen manuelt, hvis den ikke allerede findes.
+
+**Nyt i 0.2.2:** Hold musen over en søjle, eller tryk på den på mobil, for at se **dato, kWh, kroner inkl. moms og kr./kWh** samlet. Den lokale historikimport viser nu fremdrift under hentningen og genbruger allerede gemte ældre måneder og fuldførte timedage. De to nyeste måneder kontrolleres stadig for forsinkede målinger og rettelser.
 
 **Privat og vedvarende:** Historiske data gemmes i Home Assistants lokale, private `.storage`-lager, ikke som tusindvis af sensorattributter. De forbliver tilgængelige efter genstart og bliver opdateret, når integrationen henter nye aflæsninger. Kun Home Assistant-administratorer kan tilgå den fulde historik via kortets godkendte API.
 
@@ -100,6 +102,11 @@ Priserne er baseret på oplysningerne fra Min OK og kan afvige fra de endelige b
 - Integrationen kommunikerer med OK via HTTPS og kræver ingen åbne indgående porte.
 
 ## Seneste ændringer
+
+**0.2.2 – Hurtigere historik og detaljer ved søjler**
+
+Grafens søjler har en tydelig tooltip, som viser både kWh, samlet pris, gennemsnitspris og dato. Historikimporten viser løbende fremdrift og springer tidligere hentede ældre måneder og komplette timedage over. Dine eksisterende sensorer, personlige data og login ændres ikke.
+
 
 **0.2.1 – Automatisk indlæsning af historikkort**
 
