@@ -1,8 +1,12 @@
 name: Publish stable OK El release
 
-# No push or pull_request trigger: only an explicit approved run
-# is allowed to offer a new stable version to Marketplace users.
+# Code changes alone never release. Only a deliberate manifest version
+# bump on main, or a manually approved workflow run, can publish a stable build.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "custom_components/ok_el/manifest.json"
   workflow_dispatch:
     inputs:
       version:
@@ -32,8 +36,8 @@ jobs:
           REQUESTED_VERSION: \${{ inputs.version }}
           CONFIRMATION: \${{ inputs.confirmation }}
         run: |
-          if [ "$CONFIRMATION" != "PUBLISH" ]; then
-            echo "::error::Confirmation must be PUBLISH"; exit 1
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$CONFIRMATION" != "PUBLISH" ]; then
+            echo "::error::Manual releases require confirmation PUBLISH"; exit 1
           fi
           if [ "$GITHUB_REF" != "refs/heads/main" ]; then
             echo "::error::Stable releases must run from main"; exit 1
@@ -42,8 +46,10 @@ jobs:
           import json, os, re
           from pathlib import Path
           requested = os.environ["REQUESTED_VERSION"]
-          assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", requested), "Stable SemVer required"
           manifest = json.loads(Path("custom_components/ok_el/manifest.json").read_text())
+          if os.environ["GITHUB_EVENT_NAME"] == "push":
+              requested = manifest["version"]
+          assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", requested), "Stable SemVer required"
           assert manifest["domain"] == "ok_el"
           assert manifest["version"] == requested, "Requested and manifest versions differ"
           print("Approved stable version:", requested)
