@@ -20,5 +20,7 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: JavaScript syntax of history card
         run: node --check custom_components/ok_el/frontend/ok-el-history-card.js
+      - name: Test refresh button visual feedback
+        run: node tests/test_dashboard_feedback.js
       - name: Verify metadata and energy integration
         uses: home-assistant/actions/hassfest@master
