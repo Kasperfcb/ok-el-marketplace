@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .client import OKClient
+from .client import OKAPIError, OKClient
 from .const import CONF_EMAIL, CONF_PASSWORD, DOMAIN
 from .dates import COPENHAGEN, hour_window, month_window, previous_months, year_window
 from .history_data import PERIODS, history_summary, merge_history
@@ -48,11 +48,17 @@ def fetch_archive(email: str, password: str, months: int, hour_days: int) -> dic
     agreement = candidates[0]
 
     days: list[dict] = []
+    failures: list[str] = []
     months_to_fetch = previous_months(today, months)
     for year, month in months_to_fetch:
         start, end = month_window(year, month)
-        days.extend(_pair(client, agreement, "DAY", start, end))
+        try:
+            days.extend(_pair(client, agreement, "DAY", start, end))
+        except (OKAPIError, OKDataError):
+            failures.append(f"Dag {year}-{month:02d}")
         time.sleep(0.35)
+    if not days:
+        raise OKDataError("Ingen dagsdata kunne hentes fra OK")
 
     hours: list[dict] = []
     available = sorted({
@@ -64,26 +70,39 @@ def fetch_archive(email: str, password: str, months: int, hour_days: int) -> dic
     from datetime import date
     for label in available:
         start, end = hour_window(date.fromisoformat(label))
-        hours.extend(_pair(client, agreement, "HOUR", start, end))
+        try:
+            hours.extend(_pair(client, agreement, "HOUR", start, end))
+        except (OKAPIError, OKDataError):
+            failures.append(f"Time {label}")
         time.sleep(0.35)
 
     years = sorted({year for year, _ in months_to_fetch})
     monthly: list[dict] = []
     quarterly: list[dict] = []
     for year in years:
-        monthly.extend(normalize_comparison(
-            client.get_comparison(agreement, period="MONTH", years=[year]), period="MONTH"
-        ))
+        try:
+            monthly.extend(normalize_comparison(
+                client.get_comparison(agreement, period="MONTH", years=[year]), period="MONTH"
+            ))
+        except (OKAPIError, OKDataError):
+            failures.append(f"Måned {year}")
         time.sleep(0.35)
-        quarterly.extend(normalize_comparison(
-            client.get_comparison(agreement, period="QUARTER", years=[year]), period="QUARTER"
-        ))
+        try:
+            quarterly.extend(normalize_comparison(
+                client.get_comparison(agreement, period="QUARTER", years=[year]), period="QUARTER"
+            ))
+        except (OKAPIError, OKDataError):
+            failures.append(f"Kvartal {year}")
         time.sleep(0.35)
 
     start, end = year_window(years[0], years[-1])
-    annual = _pair(client, agreement, "YEAR", start, end)
+    try:
+        annual = _pair(client, agreement, "YEAR", start, end)
+    except (OKAPIError, OKDataError):
+        annual = []
+        failures.append("Årsoversigt")
     return {"HOUR": hours, "DAY": days, "MONTH": monthly,
-            "QUARTER": quarterly, "YEAR": annual}
+            "QUARTER": quarterly, "YEAR": annual, "_failed_count": len(failures)}
 
 
 class HistoryManager:
@@ -155,7 +174,13 @@ class HistoryManager:
                 hour_days,
             )
             self.last_completed = datetime.now(COPENHAGEN).isoformat(timespec="seconds")
+            missed = int(history.pop("_failed_count", 0))
             await self.async_ingest(history)
+            if missed:
+                self.last_error = (
+                    f"Delvis import: {missed} dataforespørgsler kunne ikke hentes. "
+                    "Allerede hentede målinger er gemt."
+                )
         except Exception as exc:  # noqa: BLE001
             # Do not expose tokens, cookies or personal response bodies.
             _LOGGER.warning("OK El history import failed: %s", type(exc).__name__)
