@@ -161,6 +161,7 @@ class OKElHistoryCard extends HTMLElement {
     this.shadowRoot.getElementById("limit").addEventListener("change",event=>{
       this._limit=event.target.value;this._render();
     });
+    this.shadowRoot.getElementById("chart").addEventListener("pointerleave",()=>this._hideTooltip());
     this.shadowRoot.getElementById("reload").addEventListener("click",()=>this._fetch());
     this.shadowRoot.getElementById("import").addEventListener("click",()=>this._import());
   }
@@ -277,7 +278,7 @@ class OKElHistoryCard extends HTMLElement {
       hit.addEventListener("click",event=>this._showTooltip(r,event,hit));
       svg.appendChild(hit);
     });
-    svg.addEventListener("pointerleave",()=>this._hideTooltip(),{once:true});
+
     const marks=Math.min(6,rows.length);
     for(let i=0;i<marks;i++){
       const index=marks===1?0:Math.round((rows.length-1)*i/(marks-1));
