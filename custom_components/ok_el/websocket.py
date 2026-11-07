@@ -49,7 +49,7 @@ def ws_history(
         vol.Required("type"): "ok_el/backfill",
         vol.Optional("entry_id"): str,
         vol.Optional("months", default=12): vol.All(vol.Coerce(int), vol.Range(min=1, max=36)),
-        vol.Optional("hour_days", default=7): vol.All(vol.Coerce(int), vol.Range(min=0, max=30)),
+        vol.Optional("hour_days", default=7): vol.Any(vol.In(["all"]), vol.In([0, 7, 14, 30, 90, 180, 365])),
     }
 )
 @callback
