@@ -23,6 +23,17 @@ def row_day(row: dict[str, Any]) -> date | None:
         return None
 
 
+DANISH_WEEKDAYS = (
+    "Mandag", "Tirsdag", "Onsdag", "Torsdag",
+    "Fredag", "Lørdag", "Søndag",
+)
+
+
+def day_label(day: date) -> str:
+    """Provide an explicit Danish weekday and date, independent of OS locale."""
+    return f"{DANISH_WEEKDAYS[day.weekday()]} {day:%d/%m-%y}"
+
+
 def known_total(rows: list[dict[str, Any]], field: str) -> float | None:
     """Sum measured values, never interpreting an unavailable reading as zero."""
     values = [float(row[field]) for row in rows if
@@ -133,12 +144,20 @@ def build_snapshot(
         cost = period.get("dkk_inkl_moms")
         values[f"day_{offset}_kwh"] = kwh
         values[f"day_{offset}_cost"] = cost
-        day_attributes = {"date": calendar_day.isoformat(), "days_ago": offset,
-                          "measured": kwh is not None}
+        day_attributes = {
+            "date": calendar_day.isoformat(),
+            "date_label": day_label(calendar_day),
+            "weekday": DANISH_WEEKDAYS[calendar_day.weekday()],
+            "days_ago": offset,
+            "measured": kwh is not None,
+        }
         attrs[f"day_{offset}_kwh"] = day_attributes
         attrs[f"day_{offset}_cost"] = day_attributes
         recent_rows.append({
-            "date": calendar_day.isoformat(), "kwh": kwh,
+            "date": calendar_day.isoformat(),
+            "date_label": day_label(calendar_day),
+            "weekday": DANISH_WEEKDAYS[calendar_day.weekday()],
+            "kwh": kwh,
             "cost_dkk": cost,
         })
 
@@ -153,6 +172,7 @@ def build_snapshot(
         "priced_days": sum(item["cost_dkk"] is not None for item in recent_rows),
         "expected_days": 7,
         "daily_history": list(reversed(recent_rows)),
+        "coverage_note": "Sum af kendte værdier; manglende dage tælles ikke som 0 kWh",
     }
     attrs["last_7_days_kwh"] = summary_attributes
     attrs["last_7_days_cost"] = summary_attributes
