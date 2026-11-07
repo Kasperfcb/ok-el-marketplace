@@ -2,7 +2,7 @@
 
 Få overblik over dit elforbrug og dine elpriser fra **Min OK** direkte i Home Assistant. Integrationen finder automatisk din elaftale og opretter sensorer til både forbrug og omkostninger.
 
-**Version 0.1.2 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
+**Version 0.2.0 · 34 sensorer · Danmark · Automatisk opdatering hver 6. time**
 
 > **Uofficiel integration:** Projektet er udviklet uafhængigt af OK og er ikke tilknyttet eller understøttet af OK.
 
@@ -53,11 +53,34 @@ Du behøver ikke kende dit aftalenummer. Det bliver fundet automatisk, når du l
 
 De historiske dagsensorer viser **ugedag og dato direkte i navnet**, fx:
 
-**Forbrug – Torsdag d. 05/11-26** · **Pris – Torsdag d. 05/11-26**
+**Forbrug – 01 – Torsdag d. 05/11-26** · **Pris – 01 – Torsdag d. 05/11-26**
 
 Hver dag vises med sit faktiske kalenderdatum, også når der endnu ikke er aflæste tal. Når datoen skifter, følger sensorernes navne med, mens deres Home Assistant-identiteter forbliver de samme. Du kan trykke på en dagsensor og finde dato og ugedag i dens attributter.
 
 Sensorerne **Forbrug de seneste 7 afsluttede dage** og **Pris de seneste 7 afsluttede dage** opsummerer kun de aflæsninger, OK har leveret. Attributterne viser både antal dage med målinger og en dateret oversigt over de syv dage. Et manglende døgn tælles **aldrig** som 0 kWh; totalen kan derfor være ufuldstændig.
+
+## Historik-dashboard i Home Assistant
+
+I version 0.2.0 følger et dashboardkort med integrationen. Kortet viser **interaktive grafer, datotabeller og summer** for time-, dags-, måneds-, kvartals- og årsdata samt elpriser inkl. moms.
+
+**Sådan tilføjer du kortet**
+
+1. Installér opdateringen via Marketplace og genstart Home Assistant.
+2. Åbn dit Home Assistant-dashboard, vælg **Rediger dashboard → Tilføj kort → Manuel**.
+3. Indsæt:
+
+```yaml
+type: custom:ok-el-history-card
+```
+
+4. Gem kortet. Det viser straks de historiske målinger, integrationen allerede har hentet.
+5. Tryk på **Hent historik** i kortet for at indlæse ældre data. Du kan vælge 6, 12, 24 eller 36 måneders dagsdata samt timeforbrug for 0, 7, 14 eller 30 aflæste dage. En import kan tage tid, og data bliver hentet i baggrunden.
+
+**Hvis korttypen ikke vises:** Gå til **Indstillinger → Dashboards → Ressourcer**, tilføj `/ok-el-assets/ok-el-history-card.js` som **JavaScript-modul**, og genindlæs din browser. Ressourcer registreres normalt automatisk i Home Assistants standard-dashboardtilstand.
+
+**Privat og vedvarende:** Historiske data gemmes i Home Assistants lokale, private `.storage`-lager, ikke som tusindvis af sensorattributter. De forbliver tilgængelige efter genstart og bliver opdateret, når integrationen henter nye aflæsninger. Kun Home Assistant-administratorer kan tilgå den fulde historik via kortets godkendte API.
+
+**Omfang:** Historikimporten understøtter aktuelt op til 36 måneders dagsdata og 30 aflæste dage med timedata pr. import, plus månedlige, kvartalsvise og årlige sammenligninger for perioden. Den indeholder **ikke fakturaer**. Antallet af faktisk tilgængelige målinger afhænger af OK.
 
 ### Sådan skal tallene forstås
 
@@ -75,6 +98,10 @@ Priserne er baseret på oplysningerne fra Min OK og kan afvige fra de endelige b
 - Integrationen kommunikerer med OK via HTTPS og kræver ingen åbne indgående porte.
 
 ## Seneste ændringer
+
+**0.2.0 – Historik-dashboard og datofølge**
+
+Tilføjer et indbygget historikkort med grafer og tabeller, privat lokal lagring og mulighed for at hente ældre målinger. Dagsensorerne får nummerering 01–07, så nyeste dato sorteres først. De 34 eksisterende sensorer og deres unikke ID'er bevares. Kortet er endnu ikke live-testet på en brugers Home Assistant-installation.
 
 **0.1.2 – Dagsforbrug med danske datoer**
 
