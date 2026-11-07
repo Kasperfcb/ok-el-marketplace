@@ -20,7 +20,7 @@ JS_PATH = Path(__file__).parent / "frontend" / "ok-el-history-card.js"
 async def async_register_card(hass: HomeAssistant) -> None:
     """Serve bundled JavaScript and register a dashboard resource if supported."""
     await hass.http.async_register_static_paths([
-        StaticPathConfig(BASE_URL + "/ok-el-history-card.js", JS_PATH, False)
+        StaticPathConfig(BASE_URL + "/ok-el-history-card.js", str(JS_PATH), False)
     ])
 
     async def _register_resource() -> None:
